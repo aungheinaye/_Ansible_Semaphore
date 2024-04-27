@@ -1,5 +1,5 @@
 ---
-- name: Migrate Docker Containers
+- name: Docker Containers Migration Test
   hosts: all
   gather_facts: false
   tasks:
