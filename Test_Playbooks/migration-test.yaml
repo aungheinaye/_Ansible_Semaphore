@@ -1,0 +1,33 @@
+---
+- name: Migrate Docker Containers
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Stop Docker containers on the old VM
+      shell: docker stop $(docker ps -q)
+      when: inventory_hostname == 'oldVM'
+
+    - name: Archive Docker container data
+      shell: docker save $(docker ps -a -q) > /tmp/docker_containers.tar
+      when: inventory_hostname == 'oldVM'
+
+    - name: Fetch Docker container data from old VM
+      fetch:
+        src: /tmp/docker_containers.tar
+        dest: "/tmp/{{ inventory_hostname }}_docker_containers.tar"
+        flat: yes
+      when: inventory_hostname == 'oldVM'
+
+    - name: Copy Docker container data to new VM
+      copy:
+        src: "/tmp/{{ hostvars['oldVM']['ansible_hostname'] }}_docker_containers.tar"
+        dest: "/tmp/docker_containers.tar"
+      when: inventory_hostname == 'newVM'
+
+    - name: Load Docker container data on new VM
+      shell: docker load < /tmp/docker_containers.tar
+      when: inventory_hostname == 'newVM'
+
+    - name: Start Docker containers on new VM
+      shell: docker start $(docker ps -a -q)
+      when: inventory_hostname == 'newVM'
